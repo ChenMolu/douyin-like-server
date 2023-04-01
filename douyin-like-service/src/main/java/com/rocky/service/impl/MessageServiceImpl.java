@@ -9,12 +9,10 @@ import com.rocky.vo.MessageVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tk.mybatis.mapper.entity.Example;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class MessageServiceImpl implements MessageService {
@@ -43,12 +41,6 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public List<MessageVO> queryList(long fromUserId, long toUserId, long preMsgTime) {
-//        Example msgExample = new Example(Message.class);
-//        Example.Criteria criteria = msgExample.createCriteria();
-//        criteria.andEqualTo("uid",fromUserId);
-//        criteria.andEqualTo("vid",toUserId);
-//        criteria.andEqualTo("messageStatus",(byte)0);
-//        Date preTime = new Date(preMsgTime);
         List<Message> msgList = messageMapper.findMessageByvidANDuid(fromUserId,toUserId,new Date(preMsgTime));
         List<MessageVO> msgListVO = new ArrayList<>();
         //msgListVO = msgList.stream().map(x -> new MessageVO(x)).collect(Collectors.toList());
