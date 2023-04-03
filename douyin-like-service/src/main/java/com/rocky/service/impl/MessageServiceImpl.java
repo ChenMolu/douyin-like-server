@@ -16,10 +16,6 @@ import java.util.List;
 
 @Service
 public class MessageServiceImpl implements MessageService {
-
-    //todo
-
-
     @Autowired
     private MessageMapper messageMapper;
 
