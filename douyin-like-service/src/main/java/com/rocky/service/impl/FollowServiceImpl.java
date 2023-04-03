@@ -1,6 +1,7 @@
 package com.rocky.service.impl;
 
 import com.rocky.bo.MessageBO;
+import com.rocky.pojo.Users;
 import com.rocky.result.MessageEnum;
 import com.rocky.result.ResponseStatusEnum;
 import com.rocky.utils.BaseInfoProperties;
@@ -33,41 +34,36 @@ public class FollowServiceImpl extends BaseInfoProperties implements FollowServi
     public RabbitTemplate rabbitTemplate;
 
     @Override
+    @Transactional
     public ResultVO follow(long fromUID, long toUID) {
-        // 先判断toUID有没有关注fromUID
-        boolean hasBeenFollowed = isFollow(toUID, fromUID);
-
-        // 尝试update数据库中的follow_status为1，并获取受影响行数
-        int lines;
-        if (hasBeenFollowed) {
-            followMapper.updateFollow(toUID, fromUID, (byte) 1);
-            lines = followMapper.updateFollow(fromUID, toUID, (byte) 1);
-        } else {
-            lines = followMapper.updateFollow(fromUID, toUID, (byte) 0);
+        boolean hasBeenFollowed = isFollow(fromUID, toUID);
+        //如果已经关注
+        if(hasBeenFollowed){
+            return ResultVO.ok(ResponseStatusEnum.SUCCESS);
         }
-
-        if (lines == 0) { // 受影响行数为0，说明需insert关注记录到数据库中
-            Follow follow = new Follow();
-            follow.setFromId(fromUID);
-            follow.setToId(toUID);
-            follow.setFollowStatus((byte) 1);
-            if (hasBeenFollowed) {
-                follow.setIsFriend((byte) 1);
-            } else {
-                follow.setIsFriend((byte) 0);
-            }
-            follow.setCreateTime(new Date());
-
-            followMapper.insert(follow);
+        boolean isFriend = isFollow(toUID,fromUID);
+        Follow follow = new Follow();
+        follow.setFromId(fromUID);
+        follow.setToId(toUID);
+        if(isFriend)
+            follow.setIsFriend((byte) 1);
+        else
+            follow.setIsFriend((byte) 0);
+        follow.setFollowStatus((byte) 1);
+        follow.setCreateTime(new Date());
+        int rs = followMapper.insert(follow);
+        if(rs>0){
+            // 关注人关注数加一
+            usersService.updateFollowCount(fromUID, (byte) 1);
+            //被关注人粉丝加一
+            usersService.updateFollowerCount(toUID, (byte) 1);
         }
-//todo
+        else
+            return ResultVO.error(ResponseStatusEnum.FAILED);
+        //todo
         // 系统消息：关注博主
-
         // MQ异步解耦
-
         //使用官方账户发送谁关注你了
-
-
         MessageBO messageBO = new MessageBO(1L,toUID,"有人关注你了！",(byte)0);
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE_MSG,
@@ -79,14 +75,22 @@ public class FollowServiceImpl extends BaseInfoProperties implements FollowServi
 
     @Override
     public ResultVO unFollow(long fromUID, long toUID) {
-        // 先判断toUID有没有关注fromUID
-        boolean hasBeenFollowed = isFollow(toUID, fromUID);
-        if (hasBeenFollowed) {
-            followMapper.updateFollow(toUID, fromUID, (byte) 0);
+        // 判断是否关注
+        boolean hasBeenFollowed = isFollow(fromUID, toUID);
+        //如果没有关注，则无需操作
+        if(!hasBeenFollowed){
+            return ResultVO.ok(ResponseStatusEnum.SUCCESS);
         }
-
-        followMapper.updateUnfollow(fromUID, toUID);
-
+        Follow follow = new Follow();
+        follow.setFromId(fromUID);
+        follow.setToId(toUID);
+        int rs = followMapper.delete(follow);
+        if(rs>0){
+            usersService.updateFollowCount(fromUID, (byte) 2);
+            usersService.updateFollowerCount(toUID, (byte) 2);
+        }
+        else
+            return ResultVO.error(ResponseStatusEnum.FAILED);
         return ResultVO.ok(ResponseStatusEnum.SUCCESS);
     }
 

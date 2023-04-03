@@ -26,6 +26,7 @@ public interface UsersService {
      */
     UsersVO findById(long sourceUserId, long targetUserId);
 
+
     /**
      * 判断邮件是否存在，返回用户信息
      */
@@ -47,6 +48,10 @@ public interface UsersService {
     ResultVO register(RegistLoginBO registLoginBO);
 
 
+    boolean updateFollowCount(long targetId,Byte status);
+
+
+    boolean updateFollowerCount(long targetId,Byte status);
 
 
  }

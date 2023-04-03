@@ -12,6 +12,7 @@ import com.rocky.service.UsersService;
 
 import com.rocky.vo.UsersVO;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -84,9 +85,36 @@ public class UsersServiceImpl extends BaseInfoProperties implements UsersService
        );
 
        return usersVO;
-
     }
 
+
+    @Override
+    public boolean updateFollowCount(long targetId,Byte status){
+        Users user = usersMapper.selectByPrimaryKey(targetId);
+        int rs=0;
+        if(status == (byte) 1){
+            user.setFollowCount(user.getFollowCount()+1);
+        }
+        else{
+            user.setFollowCount(user.getFollowCount()-1);
+        }
+        rs = usersMapper.updateByPrimaryKey(user);
+        return rs>0 ? true: false;
+    }
+
+    @Override
+    public boolean updateFollowerCount(long targetId,Byte status){
+        Users user = usersMapper.selectByPrimaryKey(targetId);
+        int rs=0;
+        if(status == (byte) 1){
+            user.setFollowerCount(user.getFollowerCount()+1);
+        }
+        else{
+            user.setFollowerCount(user.getFollowerCount()-1);
+        }
+        rs = usersMapper.updateByPrimaryKey(user);
+        return rs>0 ? true: false;
+    }
 
     @Override
     public Users findByEmail(String email) {
